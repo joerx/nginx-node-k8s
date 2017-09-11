@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  web:
+    image: joerx/nginx-proxy
+    volumes:
+      - pub_files:/code/public
+    environment:
+      NGINX_PORT: 80
+      NGINX_ROOT: /code/public
+      PROXYPASS_PORT: 3000
+      PROXYPASS_HOST: backend
+    ports:
+      - 8080:80
+    links:
+      - backend
+
+  backend:
+    build: webapp/
+    volumes:
+      - pub_files:/code/public
+      - ./webapp/config/app.properties.default:/code/config/app.properties
+      - ./webapp/config/api_key.txt.default:/code/secrets/api_key.txt
+    # links:
+    #   - postgres
+    ports:
+      - 3000:3000
+    environment:
+      # NODE_ENV: development
+      # PG_URL: tcp://expensely_usr:expensely_pw@postgres/expensely_dev
+      PORT: 3000
+    command: npm start
+    # command: sleep 10000
+
+  # postgres:
+  #   image: postgres:9.6
+  #   environment:
+  #     POSTGRES_PASSWORD: expensely_pw
+  #     POSTGRES_USER: expensely_usr
+  #     POSTGRES_DB: expensely_dev
+
+volumes:
+  pub_files:

@@ -1,0 +1,17 @@
+<h1>Hello Sample App!</h1>
+<div>
+    <p>The links below are handled by a nodejs app proxied through Nginx:</p>
+    <ul>
+        <li><a href="/info">System Info</a></li>
+        <li><a href="/config">Configuration</a></li>
+    </ul>
+</div>
+<div>
+    <p>
+        The image is served by Nginx directly but it was copied from the app container into a 
+        volume shared by both containers:
+    </p>
+    <p>
+        <img src="/kubernetes.png" alt="Kubernetes Logo">
+    </p>
+</div>
