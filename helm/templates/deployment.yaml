@@ -1,0 +1,88 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+        # init container, copy static files from webapp to share with nginx
+        - name: {{ template "name" . }}-prepare-assets
+          image: {{ .Values.webapp.image }}
+          command: ["cp", "-R", "/code/public", "/var/www/html"]
+          volumeMounts:
+            - mountPath: /var/www/html
+              name: pub-files
+      containers:
+        # nginx container, mount pub-files from webapp container and vhost config via configmap
+        - name: {{ template "name" . }}-nginx
+          image: {{ .Values.nginx.image }}
+          imagePullPolicy: {{ .Values.nginx.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.nginx.internalPort }}
+          volumeMounts:
+            - mountPath: /etc/nginx/conf.d
+              name: nginx-conf
+            - mountPath: /var/www/html
+              name: pub-files
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.nginx.internalPort }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.nginx.internalPort }}
+          resources:
+        # webapp container - the nodejs demo app we want to deploy
+{{ toYaml .Values.resources | indent 12 }}
+        - name: {{ template "name" . }}-webapp
+          image: {{ .Values.webapp.image }}
+          imagePullPolicy: {{ .Values.webapp.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.webapp.internalPort }}
+          volumeMounts:
+            - mountPath: /code/config
+              name: app-config
+            - mountPath: /code/secrets
+              name: app-apikey
+          env:
+            - name: NODE_PORT
+              value: '{{ .Values.webapp.internalPort }}'
+          livenessProbe:
+            httpGet:
+              path: /info
+              port: {{ .Values.webapp.internalPort }}
+          readinessProbe:
+            httpGet:
+              path: /info
+              port: {{ .Values.webapp.internalPort }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+        # nginx vhost config, declared as config map
+        - name: nginx-conf
+          configMap:
+            name: {{ template "fullname" . }}-nginx-conf
+        # public files to share with nginx, we copy the actual files in here via initContainer
+        - name: pub-files
+          emptyDir: {}
+        # application config files
+        - name: app-config
+          configMap:
+            name: {{ template "fullname" . }}-app-config
+        # application secrets
+        # TODO: configmap for now, use secret later
+        - name: app-apikey
+          configMap:
+            name: {{ template "fullname" . }}-api-key

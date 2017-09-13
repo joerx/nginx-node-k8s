@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ template "fullname" . }}-app-config
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data: 
+  app.properties: |-
+    [aws]
+    region us-east-1
+    bucket bucketofapples
+    prefix granny-smith

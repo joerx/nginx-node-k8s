@@ -1,0 +1,10 @@
+apiVersion: v1
+description: A Helm chart to deploy the enclosing app to Kubernetes
+name: helm
+version: 0.1.0
+keywords:
+- nginx
+- nodejs
+maintainers:
+  - name: Joerg Henning
+    email: joerg@yodo.io
